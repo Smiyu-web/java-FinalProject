@@ -107,41 +107,45 @@ public class Driver {
 	}
 	
 	public static void findReservation(Connection conn) throws SQLException {
+		boolean isFound = false;
 		PreparedStatement printReservation = conn.prepareStatement(JOIN_USER_RES);
-		ResultSet reservation = printReservation.executeQuery();
-//		System.out.print("Enter reservation id : ");
-//		int inputId = input.nextInt();		
+		ResultSet reservation = printReservation.executeQuery();	
 		System.out.print("Enter first name of customer : ");
 		String inputFname = input.next();
 		
 		while (reservation.next()) {
-			if(reservation.getString("user_firstName").equals(inputFname)) { 
+			if(reservation.getString("user_firstName").equalsIgnoreCase(inputFname)) { 
+				isFound = true;
 				System.out.println("Reservation Id : " + reservation.getInt("reservation_id") + 
 						"\nCustomer Name : " + reservation.getString("user_firstName") + " " + reservation.getString("user_lastName") +
 						"\nNumber of party : " + reservation.getString("reservation_people") +
 						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time") + "\n");	
 			}
 		}
+		if (!isFound) {
+			System.out.println(inputFname + "'s reservation is not found.");
+		}
     }
 	
 	public static void findTodayReservation(Connection conn) throws SQLException {
+		boolean isFound = false;
 		PreparedStatement printReservation = conn.prepareStatement(JOIN_USER_RES);
 		ResultSet reservation = printReservation.executeQuery();
 		System.out.print("Enter date of today : ");
         String date = input.next();		
 		Date reservation_date = Date.valueOf(date);	
-		
-		System.out.println(reservation_date);
-		
+				
 		while (reservation.next()) {
 			if(reservation.getDate("reservation_date").equals(reservation_date)) { 
+				isFound = true;
 				System.out.println("Reservation Id : " + reservation.getInt("reservation_id") + 
 						"\nCustomer Name : " + reservation.getString("user_firstName") + " " + reservation.getString("user_lastName") +
 						"\nNumber of party : " + reservation.getString("reservation_people") +
 						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time") + "\n");	
-			} else {
-				System.out.println("No reservation today.");
 			}
+		}
+		if (!isFound) {
+			System.out.println("No reservation today.");
 		}
     }
 	
@@ -234,46 +238,54 @@ public class Driver {
 		}
 	}
 	
-	public static int staffPage() {
+	public static void staffPage() {
 		System.out.println("1 - check today's reservations"
 				+ "\n2 - check all reservations"
 				+ "\n3 - find a reservation"
 				+ "\n4 - update a reservation"
-				+ "\n5 - cancel a reservation");
-		return input.nextInt();
+				+ "\n5 - cancel a reservation"
+				+ "\n0 - quit");
 	}
 	
 	public static void process(Connection conn) throws SQLException {
+
 		System.out.println("Would you like to go to [1] staff page [2] customer page?");
 		int option = input.nextInt();
 		
 		switch (option) {
 		// staff page
 		case 1:
-			int staffOption = staffPage();
+			staffPage();
+			boolean quit = false;
 			
-			switch (staffOption) {
-			case 1:
-//				printTodayReservation();
-				break;
-			case 2:
-				printReservation(conn);
-				break;
-			case 3:
-//				findReservation();
-				break;
-			case 4:
-				updateReservation(conn);
-				break;
-			case 5:
-				deleteReservation(conn);
-				break;
-			default:
-				System.out.println("Invalid input");
-				break;
+			while(!quit) {
+				System.out.print("What would you like to do? : ");
+				int staffOption = input.nextInt();
+				
+				switch (staffOption) {
+				case 1:
+					findTodayReservation(conn);
+					break;
+				case 2:
+					printReservation(conn);
+					break;
+				case 3:
+					findReservation(conn);
+					break;
+				case 4:
+					updateReservation(conn);
+					break;
+				case 5:
+					deleteReservation(conn);
+					break;
+				case 0:
+					quit = true;
+					System.out.println("Have a good day!");
+				default:
+					System.err.println("Invalid input");
+					break;
+				}
 			}
-			
-			
 			break;
 		// customer page
 		case 2:
@@ -285,7 +297,6 @@ public class Driver {
 			break;
 		}
 		
-		System.out.println("What would you like to do?");
 	}
 
 
@@ -301,7 +312,8 @@ public class Driver {
 //		updateReservation(conn);
 //		deleteReservation(conn);
 		findReservation(conn);
-		findTodayReservation(conn);
+//		findTodayReservation(conn);
+//		process(conn);
 	}
 	
 	
