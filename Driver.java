@@ -8,12 +8,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.Scanner;
 
-
 import dbconnection.DBConnection;
-
 
 public class Driver {
 
@@ -51,6 +48,9 @@ public class Driver {
 		return null;
 	}
 	
+
+
+	
 	// add reservation to database
 	public static void addReservation(Connection conn) throws SQLException {
 		PreparedStatement addReservation = conn.prepareStatement(ADD_RESERVATION);
@@ -71,6 +71,13 @@ public class Driver {
 	// get reservation infomation from user
 	public static Reservation getAddReservation() {
 		System.out.print("Enter number of party : ");
+		
+		// avoid a bug when user inputs not interger
+		while (!input.hasNextInt()) {
+			System.err.println("Invalid input");
+			System.out.print("Enter number of party : ");
+			input.next();
+		}
 		int people = input.nextInt();
 		
 		System.out.print("When would you like to book? : ");
@@ -84,8 +91,8 @@ public class Driver {
 		Time reservation_time = Time.valueOf(time);
 		
         Timestamp timeNow = new Timestamp(System.currentTimeMillis());
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd  hh:mm");
-        String str = sdf.format(timeNow);
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd  hh:mm");
+//        String str = sdf.format(timeNow);
 
 		System.out.print("Enter user id? : ");
 		int user_id = input.nextInt();
@@ -106,6 +113,7 @@ public class Driver {
 			}
 	}
 	
+	// find a reservation by first name
 	public static void findReservation(Connection conn) throws SQLException {
 		boolean isFound = false;
 		PreparedStatement printReservation = conn.prepareStatement(JOIN_USER_RES);
@@ -127,6 +135,7 @@ public class Driver {
 		}
     }
 	
+	// find reservations by date
 	public static void findTodayReservation(Connection conn) throws SQLException {
 		boolean isFound = false;
 		PreparedStatement printReservation = conn.prepareStatement(JOIN_USER_RES);
@@ -149,52 +158,109 @@ public class Driver {
 		}
     }
 	
+	// find a reservation by id
+	public static int findReservationById(Connection conn) throws SQLException {
+		PreparedStatement findId = conn.prepareStatement(ALL_RESERVATION);
+		ResultSet reservation = findId.executeQuery();
+		System.out.print("Enter the reservation id : ");
+		int id = input.nextInt();
+				
+		while (reservation.next()) {
+			if(reservation.getInt("reservation_id") == id) { 
+				return id;
+		    }
+		}
+		return -1;
+    }
+	
 	// update reservation
 	public static void updateReservation(Connection conn) throws SQLException {
-		System.out.print("Enter the reservation id you want to update : ");
-		int id = input.nextInt();
-		System.out.print("Enter final number of party : ");
-		int people = input.nextInt();
-		System.out.print("Enter final date of reservation : ");
-    	String date = input.next();
-		Date reservation_date = Date.valueOf(date);
-		System.out.print("Enter final time of reservation : ");
-		String time = input.next();
-		Time reservation_time = Time.valueOf(time);
-		PreparedStatement updateReservation = conn.prepareStatement(UPDATE_RESERVATION);
-		updateReservation.setInt(1, people);
-		updateReservation.setDate(2, reservation_date);
-		updateReservation.setTime(3, reservation_time);
-		updateReservation.setInt(4, id);
-		updateReservation.executeUpdate();
-		
-		System.out.println("Reservation id #" + id + " has been changed.");
+		int id = findReservationById(conn);
+		if (id == -1) {
+			System.out.println("No reservation found.");
+		} else {
+			System.out.print("Enter final number of party : ");
+			int people = input.nextInt();
+			System.out.print("Enter final date of reservation : ");
+	    	String date = input.next();
+			Date reservation_date = Date.valueOf(date);
+			System.out.print("Enter final time of reservation : ");
+			String time = input.next();
+			Time reservation_time = Time.valueOf(time);
+			PreparedStatement updateReservation = conn.prepareStatement(UPDATE_RESERVATION);
+			updateReservation.setInt(1, people);
+			updateReservation.setDate(2, reservation_date);
+			updateReservation.setTime(3, reservation_time);
+			updateReservation.setInt(4, id);
+			updateReservation.executeUpdate();
+			
+			System.out.println("Reservation id #" + id + " has been changed.");	
+		}
 	}
 	
+	// delete a reservation
 	public static void deleteReservation(Connection conn) throws SQLException {
-		System.out.print("Enter a reservation id you want to cancel : ");
-		int id = input.nextInt();
 		PreparedStatement deleteReservation = conn.prepareStatement(DELETE_RESERVATION);
-		deleteReservation.setInt(1, id);
-		deleteReservation.executeUpdate();
+		int id = findReservationById(conn);
+		if (id == -1) {
+			System.out.println("No reservation found.");
+		} else {
+		    deleteReservation.setInt(1, id);
+		    deleteReservation.executeUpdate();
 		
-		System.out.println("Reservation id #" + id + " has been canceled.");
+		    System.out.println("Reservation id #" + id + " has been canceled.");
+		}
 
 	}
 	
 	// add new user to database
 	public static void addUser(Connection conn) throws SQLException {
-	PreparedStatement addUser = conn.prepareStatement(ADD_USER);
-	User user = getAddUser(conn);
-	
-	addUser.setString(1, user.getUser_firstName());
-	addUser.setString(2, user.getUser_lastName());
-	addUser.setString(3, user.getUser_email());
-	addUser.setString(4, user.getUser_phoneNumber());
-	addUser.executeUpdate();
+		PreparedStatement addUser = conn.prepareStatement(ADD_USER);
+		User user = getAddUser(conn);
+		
+		addUser.setString(1, user.getUser_firstName());
+		addUser.setString(2, user.getUser_lastName());
+		addUser.setString(3, user.getUser_email());
+		addUser.setString(4, user.getUser_phoneNumber());
+		addUser.executeUpdate();
 
-	System.out.println(user.getUser_firstName() + " " + user.getUser_lastName() + " is added.");
-    }
+		System.out.println(user.getUser_firstName() + " " + user.getUser_lastName() + " is added.");
+
+	}
+
+	// find user
+	public static ResultSet findUser(Connection conn, String email) throws SQLException {
+		PreparedStatement findUser = conn.prepareStatement(ALL_USER);
+		ResultSet user = findUser.executeQuery();
+		
+		while (user.next()) {
+			if (user.getString("user_email").equalsIgnoreCase(email)) {
+				return user;
+			}
+		}
+		return null;
+	}
+	
+	// find if email address is used or no
+	public static String findEmail(Connection conn) throws SQLException {
+		System.out.print("Enter email address : ");
+		String email = input.nextLine();
+		boolean isFound = true;
+				
+		while (isFound) {
+			ResultSet returnUser = findUser(conn, email);
+			if (returnUser != null) {
+				System.err.println("This email addrese is already used.");
+				System.out.print("Enter email address : ");
+				email = input.nextLine();
+			} else if (returnUser == null) {
+				isFound = false;
+				return email;
+			}
+		}
+		return null;
+	}
+	
 	
 	// get new user information from user
 	public static User getAddUser(Connection conn) throws SQLException {
@@ -204,13 +270,10 @@ public class Driver {
 		System.out.print("Enter last name : ");
 		String lname = input.nextLine();
 		
-		System.out.print("Enter email address : ");
-		String email = input.nextLine();
-		
+		String email = findEmail(conn);	
 		while (!Validator.EmailValidator(email)) {
 			System.err.println("Invalid email address.");
-			System.out.print("Enter email address : ");
-			email = input.nextLine();
+			email = findEmail(conn);
 		}
 		
 		System.out.print("Enter phone number : ");
@@ -219,7 +282,7 @@ public class Driver {
 		while (!Validator.PhoneValidator(phoneNumber)) {
 			System.err.println("Invalid phone number.");
 			System.out.print("Enter phone number : ");
-			email = input.nextLine();
+			phoneNumber = input.nextLine();
 		}
 
 		return new User(fname, lname, email, phoneNumber);
@@ -231,8 +294,8 @@ public class Driver {
 		ResultSet rs = printUser.executeQuery();
 		
 		while (rs.next()) {
-			System.out.println("Id: " + rs.getInt("user_id") + "\nName : " + rs.getString("user_firstName") + " " + rs.getString("user_lastName") +
-					"\nEmail : " + rs.getString("user_email") + "\nPhone Number : " + rs.getString("user_phoneNumber"));
+			System.out.println("User id: " + rs.getInt("user_id") + "\nName : " + rs.getString("user_firstName") + " " + rs.getString("user_lastName") +
+					"\nEmail : " + rs.getString("user_email") + "\nPhone Number : " + rs.getString("user_phoneNumber") + "\n");
 			
 			
 		}
@@ -240,18 +303,25 @@ public class Driver {
 	
 	public static void staffPage() {
 		System.out.println("1 - check today's reservations"
-				+ "\n2 - check all reservations"
-				+ "\n3 - find a reservation"
-				+ "\n4 - update a reservation"
-				+ "\n5 - cancel a reservation"
-				+ "\n0 - quit");
+			+ "\n2 - check all reservations"
+			+ "\n3 - find a reservation"
+			+ "\n4 - update a reservation"
+			+ "\n5 - cancel a reservation"
+			+ "\n0 - quit");
 	}
 	
 	public static void process(Connection conn) throws SQLException {
 
 		System.out.println("Would you like to go to [1] staff page [2] customer page?");
+
+		// remove a bug when user puts not interger
+		while (!input.hasNextInt()) {
+			System.err.println("Invalid input");
+			System.out.println("Would you like to go to [1] staff page [2] customer page?");
+			input.next();
+		}
 		int option = input.nextInt();
-		
+
 		switch (option) {
 		// staff page
 		case 1:
@@ -281,12 +351,14 @@ public class Driver {
 				case 0:
 					quit = true;
 					System.out.println("Have a good day!");
+					break;
 				default:
 					System.err.println("Invalid input");
 					break;
 				}
 			}
 			break;
+			
 		// customer page
 		case 2:
 			
@@ -294,6 +366,8 @@ public class Driver {
 			break;
 
 		default:
+			System.err.println("Invalid input");
+			process(conn);
 			break;
 		}
 		
@@ -305,15 +379,17 @@ public class Driver {
 	
 	public static void main(String[] args) throws SQLException {
 		Connection conn = getConnection();
-//		addUser(conn);
+		addUser(conn);
 //		addReservation(conn);
 //		printUser(conn);
 //		printReservation(conn);
 //		updateReservation(conn);
 //		deleteReservation(conn);
-		findReservation(conn);
+//		findReservation(conn);
 //		findTodayReservation(conn);
 //		process(conn);
+//		findEmail(conn);
+//		findReservationById(conn);
 	}
 	
 	

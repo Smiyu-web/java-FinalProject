@@ -7,6 +7,10 @@ import javax.swing.JLayeredPane;
 import java.awt.CardLayout;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
+import javax.swing.JButton;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.Font;
 
 public class RestaurantProject {
 
@@ -53,16 +57,21 @@ public class RestaurantProject {
 		layeredPane.add(mainPanel, "name_42662173251825");
 		mainPanel.setLayout(null);
 		
-		JLabel lblNewLabel_1 = new JLabel("New label");
+		JLabel lblNewLabel_1 = new JLabel("");
 		lblNewLabel_1.setBounds(105, 136, 61, 16);
 		mainPanel.add(lblNewLabel_1);
 		
 		JLabel lblNewLabel = new JLabel("Welcom to Stone restaurant ");
-		lblNewLabel.setBounds(208, 5, 177, 16);
+		lblNewLabel.setFont(new Font("Lucida Grande", Font.PLAIN, 20));
+		lblNewLabel.setBounds(151, 32, 332, 78);
 		mainPanel.add(lblNewLabel);
 		
-		JLabel lblNewLabel_2 = new JLabel("New label");
-		lblNewLabel_2.setBounds(390, 5, 61, 16);
-		mainPanel.add(lblNewLabel_2);
+		JButton btnNewButton = new JButton("Sigh in");
+		btnNewButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
+		btnNewButton.setBounds(211, 194, 117, 29);
+		mainPanel.add(btnNewButton);
 	}
 }
