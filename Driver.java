@@ -35,7 +35,6 @@ public class Driver {
 			+ "INNER JOIN User "
 			+ "ON Reservation.user_id = User.user_id";
 	
-	
 	private static Scanner input = new Scanner(System.in);
 	
 	// get connection
@@ -49,10 +48,12 @@ public class Driver {
 		return null;
 	}
 	
+	// ----------------------------------------------------------------------------------------------------------------------------------------------
+	
 	// add reservation to database
 	public static void addReservation(Connection conn) throws SQLException {
 		PreparedStatement addReservation = conn.prepareStatement(ADD_RESERVATION);
-		Reservation reservation = getAddReservation();
+		Reservation reservation = getAddReservation(conn);
 		
 		addReservation.setInt(1, reservation.getReservation_people());
 		addReservation.setDate(2, reservation.getReservation_date());
@@ -61,65 +62,89 @@ public class Driver {
 		addReservation.setInt(5, reservation.getUser_id());
 		addReservation.executeUpdate();
 		
-		System.out.println("Your reservation is on " + reservation.getReservation_date() + " " + reservation.getReservation_time() 
+		System.out.println("\nYour reservation is on " + reservation.getReservation_date() + " " + reservation.getReservation_time() 
 		+ " for party " + reservation.getReservation_people() + ".");
 		
 	}
 	
 	public static Date getDate() {
-		boolean isDate = false;
-		Date reservation_date = null;
+        Date reservation_date = null;
+        System.out.print("Enter date (yyyy-mm-dd): ");
+
+        while (true) {
+            String date = input.next();
+            
+            try{
+                reservation_date = Date.valueOf(date);
+            }catch(Exception e){
+                System.err.println("Invalid date");
+                System.out.print("Enter date (yyyy-mm-dd): ");
+            }
+            
+            if(reservation_date != null){
+                break;
+            }
+        }
+        return reservation_date;
+    }
+
+    public static Time getTime() {
+        Time reservation_time = null;
+        System.out.print("Enter time (HH:MM:SS): ");
+
+        while (true) {
+            String time = input.next();
+            
+            try{
+                reservation_time = Time.valueOf(time);
+            }catch(Exception e){
+                System.err.println("Invalid time");
+                System.out.print("Enter time (HH:MM:SS): ");
+            }
+            
+            if(reservation_time != null){
+                break;
+            }
+        }
+        return reservation_time;
+    }
+   
+   public static int findId(Connection conn) throws SQLException {
+		PreparedStatement user = conn.prepareStatement(ALL_USER);
+		ResultSet userResultSet = user.executeQuery();
 		
-		// avoid a bug when user inputs not interger
-		try {
-			System.out.print("Enter date : ");
-			String date = input.next();
-			reservation_date = Date.valueOf(date);
-		} catch (Exception E){
-			do {
-				System.err.println("Invalid date. Please enter again.");
-				String date = input.next();
-				reservation_date = Date.valueOf(date);
-				
-				while(reservation_date == null) {
-					System.err.println("Invalid date. Please enter again.");
-					date = input.next();
-					reservation_date = Date.valueOf(date);
-				}
-				isDate = true;
-			} while(!isDate);
+		boolean isFound = false;	
+		int user_id = getId(conn);
+
+		while (userResultSet.next()) {
+			if(userResultSet.getInt("user_id") == user_id) {
+				isFound = true;
+				return user_id;
+			}
 		}
-		return reservation_date;
+		if (!isFound) {
+			System.err.println("Input user id is not found.");
+			user_id = getId(conn);
+		}
+		return user_id;
 	}
 	
-	public static Time getTime() {
-		boolean isTime = true;
-		Time reservation_time = null;
-		
-		try {
-			System.out.print("Enter time : ");
-			String time = input.next();
-			reservation_time = Time.valueOf(time);
-		} catch (Exception E){
-			do {
-				System.err.println("Invalid time. Please enter again.");
-				String time = input.next();
-				reservation_time = Time.valueOf(time);
-				
-				while(reservation_time == null) {
-					System.err.println("Invalid time. Please enter again.");
-					time = input.next();
-					reservation_time = Time.valueOf(time);
-				}
-				isTime = true;
-			}while(!isTime);
-		}
-		return reservation_time;
-	}
-	
+   public static int getId(Connection conn) {
+		int user_id;
+		do {
+			System.out.print("Enter user id : ");
+			while(!input.hasNextInt()) {
+				System.err.println("Invalid input");
+				System.out.print("Enter user id : ");
+				input.next();
+			}
+			user_id = input.nextInt();
+		} while(user_id <= 0);
+		return user_id;
+   }
 	
 	// get reservation information from user
-	public static Reservation getAddReservation() {
+	public static Reservation getAddReservation(Connection conn) throws SQLException {
 		
 		// avoid a bug when user inputs not interger
 		int people;
@@ -140,11 +165,13 @@ public class Driver {
 		// get time the reservation is made
         Timestamp timeNow = new Timestamp(System.currentTimeMillis());
 
-		System.out.print("Enter user id? : ");
-		int user_id = input.nextInt();
+		int user_id = findId(conn);
 		
 		return new Reservation(people, reservation_date, reservation_time, timeNow, user_id);
 	}
+	
+	// ----------------------------------------------------------------------------------------------------------------------------------------------
+
 	
 	// print all users and users reservation	
 	public static void printReservation(Connection conn) throws SQLException {
@@ -152,10 +179,10 @@ public class Driver {
 			ResultSet reservation = printReservation.executeQuery();
 			
 			while (reservation.next()) {
-				System.out.println("Reservation Id : " + reservation.getInt("reservation_id") + 
+				System.out.println("\nReservation Id : " + reservation.getInt("reservation_id") + 
 						"\nCustomer Name : " + reservation.getString("user_firstName") + " " + reservation.getString("user_lastName") +
 						"\nNumber of party : " + reservation.getString("reservation_people") +
-						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time") + "\n");			
+						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time"));			
 			}
 	}
 	
@@ -170,10 +197,10 @@ public class Driver {
 		while (reservation.next()) {
 			if(reservation.getString("user_firstName").equalsIgnoreCase(inputFname)) { 
 				isFound = true;
-				System.out.println("Reservation Id : " + reservation.getInt("reservation_id") + 
+				System.out.println("\nReservation Id : " + reservation.getInt("reservation_id") + 
 						"\nCustomer Name : " + reservation.getString("user_firstName") + " " + reservation.getString("user_lastName") +
 						"\nNumber of party : " + reservation.getString("reservation_people") +
-						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time") + "\n");	
+						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time"));	
 			}
 		}
 		if (!isFound) {
@@ -191,16 +218,19 @@ public class Driver {
 		while (reservation.next()) {
 			if(reservation.getDate("reservation_date").equals(reservation_date)) { 
 				isFound = true;
-				System.out.println("Reservation Id : " + reservation.getInt("reservation_id") + 
+				System.out.println("\nReservation Id : " + reservation.getInt("reservation_id") + 
 						"\nCustomer Name : " + reservation.getString("user_firstName") + " " + reservation.getString("user_lastName") +
 						"\nNumber of party : " + reservation.getString("reservation_people") +
-						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time") + "\n");	
+						"\nDate : " + reservation.getDate("reservation_date") + " Time : " + reservation.getTime("reservation_time"));	
 			}
 		}
 		if (!isFound) {
-			System.out.println("No reservation today.");
+			System.out.println("No reservation found.");
 		}
     }
+	
+	// ----------------------------------------------------------------------------------------------------------------------------------------------
+	
 	
 	// find a reservation by id
 	public static int findReservationById(Connection conn) throws SQLException {
@@ -250,7 +280,7 @@ public class Driver {
 			updateReservation.setInt(4, id);
 			updateReservation.executeUpdate();
 			
-			System.out.println("Reservation id #" + id + " has been changed.");	
+			System.out.println("\nReservation id #" + id + " has been changed.");	
 		}
 	}
 	
@@ -264,10 +294,13 @@ public class Driver {
 		    deleteReservation.setInt(1, id);
 		    deleteReservation.executeUpdate();
 		
-		    System.out.println("Reservation id #" + id + " has been canceled.");
+		    System.out.println("\nReservation id #" + id + " has been canceled.");
 		}
 
 	}
+	
+	// ----------------------------------------------------------------------------------------------------------------------------------------------
+
 	
 	// add new user to database
 	public static void addUser(Connection conn) throws SQLException {
@@ -350,15 +383,17 @@ public class Driver {
 		ResultSet rs = printUser.executeQuery();
 		
 		while (rs.next()) {
-			System.out.println("User id: " + rs.getInt("user_id") + "\nName : " + rs.getString("user_firstName") + " " + rs.getString("user_lastName") +
-					"\nEmail : " + rs.getString("user_email") + "\nPhone Number : " + rs.getString("user_phoneNumber") + "\n");
-			
-			
+			System.out.println("\nUser id: " + rs.getInt("user_id") + "\nName : " + rs.getString("user_firstName") + " " + rs.getString("user_lastName") +
+					"\nEmail : " + rs.getString("user_email") + "\nPhone Number : " + rs.getString("user_phoneNumber"));
 		}
 	}
 	
+	// ----------------------------------------------------------------------------------------------------------------------------------------------
+
+	
 	public static void staffPage() {
-		System.out.println("1 - check today's reservations"
+		System.out.println("\n------------OPTION-------------\n"
+				+ "\n1 - check today's reservations"
 			+ "\n2 - check all reservations"
 			+ "\n3 - find a reservation"
 			+ "\n4 - update a reservation"
@@ -385,12 +420,14 @@ public class Driver {
 			boolean quit = false;
 			
 			while(!quit) {
-				System.out.print("What would you like to do? : ");
+				System.out.println("\n-------------------------------");
+				System.out.print("\nWhat would you like to do? : ");
 				
 				// remove a bug when user puts not interger
 				while (!input.hasNextInt()) {
 					System.err.println("Invalid input");
-					System.out.print("What would you like to do? : ");
+					System.out.println("\n-------------------------------");
+					System.out.print("\nWhat would you like to do? : ");
 					input.next();
 				}
 				int staffOption = input.nextInt();
@@ -424,7 +461,7 @@ public class Driver {
 			
 		// customer page
 		case 2:
-
+			System.out.println("Welcome to customer page");	
 			break;
 
 		default:
@@ -434,24 +471,15 @@ public class Driver {
 		}
 		
 	}
+	
+	// ----------------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	public static void main(String[] args) throws SQLException {
 		Connection conn = getConnection();
-//		addUser(conn);
-		addReservation(conn);
-//		printUser(conn);
-//		printReservation(conn);
-//		updateReservation(conn);
-//		deleteReservation(conn);
-//		findReservation(conn);
-//		findTodayReservation(conn);
-//		process(conn);
-//		findEmail(conn);
-//		findReservationById(conn);
-//		getDate();
+
+		process(conn);	
+
 	}
-	
-	
-	
+
 }
